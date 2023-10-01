@@ -16,16 +16,17 @@ templates = Jinja2Templates(directory='templates')
 
 @router.post('/')
 async def create_question(obj: QuestionCreate, db: AsyncSession = Depends(get_db)) -> QuestionBase:
-    question = await store.question.create_news(db=db, obj_in=obj)
+    question = await store.question.create_question(db=db, obj_in=obj)
     return question
 
 
 @router.get('/multi')
-async def create_question(db: AsyncSession = Depends(get_db)) -> list[QuestionBase]:
+async def get_question(db: AsyncSession = Depends(get_db)) -> list[QuestionBase]:
     question = await store.question.get_question_with_options(db=db, skip=0, limit=100)
     return question
 
 
+# todo переписать на service
 @router.get('/')
 def get_chat(request: Request):
     return templates.TemplateResponse("base.html", {'request': request})

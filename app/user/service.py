@@ -48,20 +48,20 @@ async def login_for_token(
     return access_token
 
 
+# todo добавить проверку на существование
 async def create_user(obj: UserBase, db: AsyncSession = Depends(get_db)) -> UserShow:
-    # user = await store.user.get_by_email(obj.nickname, db)
-    # if user:
-    #     raise UserAlreadyExist
+    user = await store.user.get_by_nickname(obj.nickname, db)
+    if user:
+        raise UserAlreadyExist
+    role = await store.user.get_role(db, PortalRole.ROLE_PORTAL_USER)
     user = await store.user.create(
         db,
         obj_in=UserCreate(
             nickname=obj.nickname,
             password=Hasher.get_hashed_password(obj.password),
-            roles=[
-                PortalRole.ROLE_PORTAL_USER,
-            ]
-        ),
-    )
+            roles=role
+
+        ))
     return user
 
 
@@ -80,27 +80,25 @@ async def update_user(
 
 
 def check_user_permissions(target_user: User, current_user: User) -> bool:
-    if PortalRole.ROLE_PORTAL_SUPERADMIN in current_user.roles:
+    if PortalRole.ROLE_PORTAL_SUPERADMIN == target_user.admin_role.role:
         raise HTTPException(
             status_code=406, detail="Superadmin cannot be deleted via API."
         )
     if target_user.user_id != current_user.user_id:
         # check admin role
-        if not {
-            PortalRole.ROLE_PORTAL_ADMIN,
-            PortalRole.ROLE_PORTAL_SUPERADMIN,
-        }.intersection(current_user.roles):
+        if not current_user.is_superadmin or current_user.is_admin:
             return False
         # check admin deactivate superadmin attempt
         if (
-                PortalRole.ROLE_PORTAL_SUPERADMIN in target_user.roles
-                and PortalRole.ROLE_PORTAL_ADMIN in current_user.roles
+                target_user.is_superadmin
+                and current_user.is_admin
         ):
             return False
         # check admin deactivate admin attempt
         if (
-                PortalRole.ROLE_PORTAL_ADMIN in target_user.roles
-                and PortalRole.ROLE_PORTAL_ADMIN in current_user.roles
+                target_user.is_admin
+                and current_user.is_admin
+
         ):
             return False
     return True
@@ -118,7 +116,7 @@ async def delete_user(
             target_user=user_for_deletion,
             current_user=current_user,
     ):
-        raise HTTPException(status_code=403, detail="Forbidden.")
+        raise HTTPException(status_code=403, detail='forbidden.')
     deleted_user_id = await store.user.remove(db=db, id=user_id)
     if deleted_user_id is None:
         raise HTTPException(
@@ -148,19 +146,10 @@ async def grant_admin_privilege(
         raise HTTPException(
             status_code=404, detail=f"User with  {email} not found."
         )
-    updated_user_params = {
-        "roles": user_for_promotion.enrich_admin_roles_by_admin_role()
-    }
-    try:
-        updated_user = await store.user.update(
-            db=db,
-            db_obj=user_for_promotion,
-            obj_in=updated_user_params,
-        )
-    except Exception as ex:
-        print(ex)
+    user_for_promotion.admin_role.append(user_for_promotion.enrich_admin_roles_by_admin_role())
+    await db.commit()
 
-    return updated_user
+    return user_for_promotion
 
 
 async def revoke_admin_privilege(

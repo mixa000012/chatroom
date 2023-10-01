@@ -19,26 +19,30 @@ class PortalRole(str, Enum):
 class User(Base):
     __tablename__ = "users"
     user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, nullable=False, unique=True, index=True)
+    nickname = Column(String, nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), default=func.now())
     password = Column(String, nullable=False)
-    roles = Column(ARRAY(String))
-
-    # team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"))
-    # # Добавляем отношение к команде
-    # team = relationship("Teams", backref="users", lazy='noload')
-
-    @property
-    def is_superadmin(self) -> bool:
-        return PortalRole.ROLE_PORTAL_SUPERADMIN in self.roles
+    admin_role_id = Column(UUID(as_uuid=True), ForeignKey('roles.id'))
+    admin_role = relationship("Roles", back_populates="users")
 
     @property
     def is_admin(self) -> bool:
-        return PortalRole.ROLE_PORTAL_ADMIN in self.roles
+        return self.admin_role.role == PortalRole.ROLE_PORTAL_ADMIN
+
+    @property
+    def is_superadmin(self) -> bool:
+        return self.admin_role.role == PortalRole.ROLE_PORTAL_SUPERADMIN
+
+
+class Roles(Base):
+    __tablename__ = "roles"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    role = Column(String)
+    users = relationship("User", backref="roles", lazy='noload')
 
     def enrich_admin_roles_by_admin_role(self):
         if not self.is_admin:
-            return {*self.roles, PortalRole.ROLE_PORTAL_ADMIN}
+            return PortalRole.ROLE_PORTAL_ADMIN
 
     def remove_admin_privileges_from_model(self):
         if self.is_admin:

@@ -5,6 +5,7 @@ from jose import jwt
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from starlette import status
 from utils.hashing import Hasher
 from app.core.deps import get_db
@@ -30,7 +31,7 @@ async def get_current_user_from_token(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = await db.execute(select(User).where(User.user_id == id))
+    user = await db.execute(select(User).options(selectinload(User.admin_role)).where(User.user_id == id))
     user = user.scalar()
     if user is None:
         raise credentials_exception

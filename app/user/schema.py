@@ -1,7 +1,9 @@
 from enum import Enum
 import uuid
-from pydantic import EmailStr
+# from pydantic import EmailStr
 import re
+from typing import Any
+
 from pydantic.main import BaseModel
 
 
@@ -17,7 +19,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    roles: list[PortalRole]
+    roles: Any
 
 
 class UserUpdateData(UserBase):
@@ -33,7 +35,7 @@ class User_(UserUpdateData):
 
 class UserShow(BaseModel):
     user_id: uuid.UUID
-    email: EmailStr
+    nickname: str
 
     class Config:
         orm_mode = True
