@@ -1,10 +1,12 @@
 from enum import Enum
 import uuid
-# from pydantic import EmailStr
+from fastapi import HTTPException
 import re
 from typing import Any
-
+from pydantic import validator
 from pydantic.main import BaseModel
+
+LETTER_MATCH_PATTERN = re.compile(r"^[а-яА-Яa-zA-Z\-]+$")
 
 
 class PortalRole(str, Enum):
@@ -19,7 +21,15 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    roles: Any
+    admin_role: Any
+
+    @validator("nickname")
+    def validate_name(cls, value):
+        if not LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail="Name should contains only letters"
+            )
+        return value
 
 
 class UserUpdateData(UserBase):

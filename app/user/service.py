@@ -59,8 +59,7 @@ async def create_user(obj: UserBase, db: AsyncSession = Depends(get_db)) -> User
         obj_in=UserCreate(
             nickname=obj.nickname,
             password=Hasher.get_hashed_password(obj.password),
-            roles=role
-
+            admin_role=role
         ))
     return user
 
@@ -126,27 +125,28 @@ async def delete_user(
 
 
 async def grant_admin_privilege(
-        email: str,
+        nickname: str,
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user_from_token),
 ) -> UserShow:
     if not current_user.is_superadmin:
         raise HTTPException(status_code=403, detail="Forbidden.")
-    if current_user.email == email:
+    if current_user.nickname == nickname:
         raise HTTPException(
             status_code=400, detail="Cannot manage privileges of itself."
         )
-    user_for_promotion = await store.user.get_by_email(email, db)
+    user_for_promotion = await store.user.get_by_nickname(nickname, db)
     if user_for_promotion.is_admin or user_for_promotion.is_superadmin:
         raise HTTPException(
             status_code=409,
-            detail=f"User with id {email} already promoted to admin / superadmin.",
+            detail=f"User with id {nickname} already promoted to admin / superadmin.",
         )
     if user_for_promotion is None:
         raise HTTPException(
-            status_code=404, detail=f"User with  {email} not found."
+            status_code=404, detail=f"User with  {nickname} not found."
         )
-    user_for_promotion.admin_role.append(user_for_promotion.enrich_admin_roles_by_admin_role())
+    admin_role = await store.user.get_role(db, PortalRole.ROLE_PORTAL_ADMIN)
+    user_for_promotion.admin_role = admin_role
     await db.commit()
 
     return user_for_promotion

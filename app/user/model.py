@@ -6,7 +6,7 @@ from sqlalchemy import String, ARRAY, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-
+from app.core import store
 from app.core.db.base_class import Base
 
 
@@ -23,7 +23,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=func.now())
     password = Column(String, nullable=False)
     admin_role_id = Column(UUID(as_uuid=True), ForeignKey('roles.id'))
-    admin_role = relationship("Roles", back_populates="users")
+    admin_role = relationship("Roles", backref="User", lazy='noload')
 
     @property
     def is_admin(self) -> bool:
@@ -38,7 +38,6 @@ class Roles(Base):
     __tablename__ = "roles"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     role = Column(String)
-    users = relationship("User", backref="roles", lazy='noload')
 
     def enrich_admin_roles_by_admin_role(self):
         if not self.is_admin:
