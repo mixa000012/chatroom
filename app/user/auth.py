@@ -10,8 +10,7 @@ from starlette import status
 from utils.hashing import Hasher
 from app.core.deps import get_db
 from app.user.model import User
-from utils import settings
-
+from app.core.config import settings
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/user/token")
 
 
@@ -24,7 +23,7 @@ async def get_current_user_from_token(
     )
     try:
         payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            token, settings.SECRET_KEY_, algorithms=[settings.ALGORITHM]
         )
         id = (payload.get("sub"))
         if id is None:

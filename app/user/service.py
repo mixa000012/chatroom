@@ -14,7 +14,7 @@ from app.user.auth import auth_user
 from app.user.auth import get_current_user_from_token
 from app.user.schema import UserShow, User_, UserBase
 from app.user.schema import UserCreate, UserUpdateData
-from utils import settings
+from app.core.config import settings
 from utils.security import create_access_token
 from utils.hashing import Hasher
 from app.user.model import User
@@ -48,7 +48,6 @@ async def login_for_token(
     return access_token
 
 
-# todo добавить проверку на существование
 async def create_user(obj: UserBase, db: AsyncSession = Depends(get_db)) -> UserShow:
     user = await store.user.get_by_nickname(obj.nickname, db)
     if user:

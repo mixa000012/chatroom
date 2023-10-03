@@ -1,9 +1,14 @@
 from typing import Generator, Any
+from uuid import uuid4
+
 import asyncpg
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, insert
 from typing import AsyncGenerator
+
+from app.user.schema import UserCreate
+from utils.hashing import Hasher
 from utils.security import create_access_token
 from datetime import timedelta
 from app.core.db.base import Base
@@ -13,7 +18,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db
 from app.main import app
-from app.user.model import User, Roles
+from app.user.model import User, Roles, PortalRole
 import asyncio
 from app.core import store
 
@@ -93,16 +98,26 @@ async def clean_table():
 
 @pytest.fixture
 async def create_user_in_database():
-    async def create_user_in_database(obj_in):
+    async def create_user_in_database(user_data):
         async with async_session_maker() as session:
-            return await store.user.create(obj_in, session)
-
+            stmt = insert(Roles).values(id=uuid4(), role=PortalRole.ROLE_PORTAL_USER)
+            await session.execute(stmt)
+            await session.commit()
+            role = await store.user.get_role(session, PortalRole.ROLE_PORTAL_USER)
+            user = await store.user.create(
+                session,
+                obj_in=UserCreate(
+                    nickname=user_data.get('nickname'),
+                    password=Hasher.get_hashed_password(user_data.get('password')),
+                    admin_role=role
+                ))
+            return user
     return create_user_in_database
 
 
 def create_test_auth_headers_for_user(email: str) -> dict[str, str]:
     access_token = create_access_token(
-        data={"sub": email},
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        data={"sub": str(email)},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE),
     )
     return {"Authorization": f"Bearer {access_token}"}

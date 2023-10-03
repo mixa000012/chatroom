@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from pydantic import BaseSettings, PostgresDsn, validator
 
+
 class Settings(BaseSettings):
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
@@ -19,6 +20,10 @@ class Settings(BaseSettings):
     PG_POOL_MAX_SIZE: int = 3
     PG_POOL_RECYCLE: int = 1200
     PG_MAX_OVERFLOW: int = 2
+    ACCESS_TOKEN_EXPIRE: int = 30
+
+    SECRET_KEY_: str = "secret_key"
+    ALGORITHM: str = "HS256"
 
     @validator("PG_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: str | None, values: Dict[str, Any]) -> Any:
