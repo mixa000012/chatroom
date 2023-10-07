@@ -1,19 +1,53 @@
+from typing import List
+from uuid import UUID
+
 from fastapi.templating import Jinja2Templates
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db
 from app.user.auth import get_current_user_from_token
-from app.core import store
+from app.answers import service
+from app.answers.service import QuestionDoenstExist
+from app.answers.schema import AnswerCreate, AnswerBase, AnswerCreateWithId, AnswerShow
 from app.user.model import User
-from app.answers.schema import AnswerCreate, AnswerBase
 
 router = APIRouter()
 
 
 @router.post('/')
 async def create_answer(obj: AnswerCreate, db: AsyncSession = Depends(get_db),
-                        current_user: User = Depends(get_current_user_from_token)) -> AnswerBase:
-    answer = await store.answer.create(db=db, obj_in=obj)
+                        current_user: User = Depends(get_current_user_from_token)) -> AnswerShow:
+    try:
+        answer = await service.create_answer(db=db, obj=obj, current_user=current_user)
+    except QuestionDoenstExist:
+        raise HTTPException(status_code=422, detail="Question doesn't exists")
     return answer
+
+
+@router.get('/')
+async def get_answers_with_text(question_id: UUID, db: AsyncSession = Depends(get_db)) -> List[AnswerShow]:
+    try:
+        answers = await service.get_answers_from_question(question_id, db)
+    except QuestionDoenstExist:
+        raise HTTPException(status_code=422, detail="Question doesn't exists")
+    return answers
+
+
+@router.get('/text')
+async def get_by_question_with_text(question_id: UUID, db: AsyncSession = Depends(get_db)) -> List[AnswerShow]:
+    try:
+        answers = await service.get_answers_from_question_with_text(question_id, db)
+    except QuestionDoenstExist:
+        raise HTTPException(status_code=422, detail="Question doesn't exists")
+    return answers
+
+
+@router.get('/')
+async def get_by_question(question_id: UUID, db: AsyncSession = Depends(get_db)) -> List[AnswerShow]:
+    try:
+        answers = await service.get_answers_from_question(question_id, db)
+    except QuestionDoenstExist:
+        raise HTTPException(status_code=422, detail="Question doesn't exists")
+    return answers

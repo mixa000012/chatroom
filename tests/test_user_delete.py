@@ -63,6 +63,7 @@ async def test_delete_user_user_id_validation_error(client, create_user_in_datab
         ]
     }
 
+
 async def test_delete_user_bad_cred(client, create_user_in_database):
     user_data = {
         "nickname": "string",
@@ -75,6 +76,7 @@ async def test_delete_user_bad_cred(client, create_user_in_database):
     )
     assert response.status_code == 401
     assert response.json() == {"detail": "Could not validate credentials"}
+
 
 async def test_delete_user_no_jwt(client, create_user_in_database):
     user_data = {

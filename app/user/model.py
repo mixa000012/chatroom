@@ -6,7 +6,6 @@ from sqlalchemy import String, ARRAY, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core import store
 from app.core.db.base_class import Base
 
 
@@ -24,6 +23,7 @@ class User(Base):
     password = Column(String, nullable=False)
     admin_role_id = Column(UUID(as_uuid=True), ForeignKey('roles.id'))
     admin_role = relationship("Roles", backref="User", lazy='noload')
+    surveys = relationship('Survey', backref='User', lazy='noload')
 
     @property
     def is_admin(self) -> bool:

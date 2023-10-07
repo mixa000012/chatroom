@@ -9,7 +9,7 @@ from app.questions.schema import QuestionCreate, QuestionUpdate, OptionCreate
 
 class QuestionAccessor(ModelAccessor[Question, QuestionCreate, QuestionUpdate]):
     async def create_question(self, db: AsyncSession, obj_in: QuestionCreate):
-        question_ = QuestionCreate(question_text=obj_in.question_text, options=[])
+        question_ = QuestionCreate(text=obj_in.text, options=[], survey_id=obj_in.survey_id, type=obj_in.type)
         for option_data in obj_in.options:
             option = Option(text=option_data.text)
             question_.options.append(option)
@@ -28,6 +28,11 @@ class QuestionAccessor(ModelAccessor[Question, QuestionCreate, QuestionUpdate]):
         questions = question.scalars().all()
 
         return questions
+
+    async def get_option(self, db: AsyncSession, option_id):
+        option = await db.execute(select(Option).where(Option.id == option_id))
+        option = option.scalar()
+        return option
 
 
 question = QuestionAccessor(Question)

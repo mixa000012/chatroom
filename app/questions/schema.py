@@ -1,4 +1,4 @@
-from enum import Enum
+from app.questions.model import QuestionTypeEnum
 import uuid
 from typing import List
 
@@ -17,8 +17,10 @@ class OptionCreate(OptionSchema):
 
 
 class QuestionBase(BaseModel):
-    question_text: str
+    text: str
     options: List[OptionCreate]
+    survey_id: uuid.UUID
+    type: QuestionTypeEnum
     class Config:
         orm_mode = True
 

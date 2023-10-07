@@ -13,5 +13,8 @@ from app.core.db.base_class import Base
 class Answer(Base):
     __tablename__ = 'answers'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    text = Column(String)
+    is_checked = Column(Boolean)
+    question_id = Column(UUID, ForeignKey('questions.id'))
     option_id = Column(UUID, ForeignKey('options.id'))
     user_id = Column(UUID, ForeignKey('users.user_id'))
