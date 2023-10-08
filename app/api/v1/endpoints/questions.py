@@ -30,5 +30,3 @@ async def create_question(obj: QuestionCreate, db: AsyncSession = Depends(get_db
 async def get_question(db: AsyncSession = Depends(get_db)) -> list[QuestionBase]:
     question = await store.question.get_question_with_options(db=db, skip=0, limit=100)
     return question
-
-# todo переписать на service
